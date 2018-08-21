@@ -1,0 +1,80 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cassandra
+  name: cassandra
+  namespace: _NAMESPACE_
+spec:
+  clusterIP: None
+  ports:
+    - port: 9042
+  selector:
+    app: cassandra
+---
+apiVersion: "apps/v1beta1"
+kind: StatefulSet
+metadata:
+  name: cassandra
+  namespace: _NAMESPACE_
+spec:
+  selector:
+    matchLabels:
+      app: cassandra
+  serviceName: cassandra
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra:3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7000
+              name: intra-node
+            - containerPort: 7001
+              name: tls-intra-node
+            - containerPort: 7199
+              name: jmx
+            - containerPort: 9042
+              name: cql
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CASSANDRA_BROADCAST_ADDRESS
+              value: "$(MY_POD_NAME).cassandra._NAMESPACE_.svc.cluster.local"
+            - name: CASSANDRA_SEEDS
+              value: cassandra-0.cassandra._NAMESPACE_.svc.cluster.local,cassandra-0.cassandra._OTHERNAMESPACE_.svc.cluster.local
+            - name: MAX_HEAP_SIZE
+              value: 256M
+            - name: HEAP_NEWSIZE
+              value: 100M
+            - name: CASSANDRA_CLUSTER_NAME
+              value: "Cassandra"
+            - name: CASSANDRA_DC
+              value: "_DATACENTER_"
+            - name: CASSANDRA_RACK
+              value: "Rack1"
+            - name: CASSANDRA_ENDPOINT_SNITCH
+              value: GossipingPropertyFileSnitch
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /var/lib/cassandra/data
+  volumeClaimTemplates:
+    - metadata:
+        name: cassandra-data
+        namespace: _NAMESPACE_
+        annotations:
+          volume.beta.kubernetes.io/storage-class: "_STORAGECLASS_"
+      spec:
+        storageClassName: _STORAGECLASS_
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
