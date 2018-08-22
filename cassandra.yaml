@@ -43,12 +43,6 @@ spec:
             - containerPort: 9042
               name: cql
           env:
-            - name: MY_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: CASSANDRA_BROADCAST_ADDRESS
-              value: "$(MY_POD_NAME).cassandra._NAMESPACE_.svc.cluster.local"
             - name: CASSANDRA_SEEDS
               value: cassandra-0.cassandra._NAMESPACE_.svc.cluster.local,cassandra-0.cassandra._OTHERNAMESPACE_.svc.cluster.local
             - name: MAX_HEAP_SIZE
